@@ -163,7 +163,7 @@ python code_analysit.py --repo-url <url> --config config.json
 - ✅ 提供了`.env.example`作为配置模板
 
 ## 许可证
-
+本项目基于 MIT 许可证开源，完整许可文本见 LICENSE 文件
 
 ## 贡献
 
