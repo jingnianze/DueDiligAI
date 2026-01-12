@@ -37,30 +37,48 @@ CodeAnalyst AI 采用多智能体协同架构，各模块职责清晰、高效�
 
 ```mermaid
 flowchart LR
+    %% 样式定义
+    classDef dbStyle fill:#e8f5e8,stroke:#43a047,stroke-width:3px
+    classDef nodeStyle fill:#bbdefb,stroke:#1976d2,stroke-width:2px
+    classDef startStyle fill:#ffecb3,stroke:#ff8f00,stroke-width:2px
+    classDef decisionStyle fill:#ffebee,stroke:#c62828,stroke-width:2px,shape:diamond
+    classDef humanStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
+    
     %% 数据库在中央上方连接所有节点
     DB[(<b>SQLite 数据库</b><br/>持久化存储)]:::dbStyle
     
     %% 主流程
     START(("开始")):::startStyle --> S[<b>扫描节点</b><br/>数据采集与提取]:::nodeStyle
     S --> ST[<b>策略节点</b><br/>分析与规划]:::nodeStyle
-    ST --> A[<b>审计节点</b><br/>执行与验证]:::nodeStyle
-    A --> SY[<b>合成节点</b><br/>汇总与报告]:::nodeStyle
-    SY --> END(("结束")):::startStyle
+    ST --> HR{<b>人类审查点</b><br/>需要人工决策}:::decisionStyle
     
-    %% 双向数据库连接
+    %% 人类审查的三种选择
+    HR -- "审批通过<br/>继续执行" --> A[<b>审计节点</b><br/>执行与验证]:::nodeStyle
+    HR -- "修改规划<br/>返回调整" --> ST
+    HR -- "终止任务<br/>结束流程" --> END2(("提前结束")):::startStyle
+    
+    %% 正常流程继续
+    A --> SY[<b>合成节点</b><br/>汇总与报告]:::nodeStyle
+    SY --> END1(("正常结束")):::startStyle
+    
+    %% 数据库连接（双向）
     DB <-.-> S
     DB <-.-> ST
+    DB <-.-> HR
     DB <-.-> A
     DB <-.-> SY
     
-    %% 样式定义
-    classDef dbStyle fill:#e8f5e8,stroke:#43a047,stroke-width:3px
-    classDef nodeStyle fill:#bbdefb,stroke:#1976d2,stroke-width:2px
-    classDef startStyle fill:#ffecb3,stroke:#ff8f00,stroke-width:2px
-    
     %% 连线样式
-    linkStyle 0,1,2,3,4 stroke:#1565c0,stroke-width:2px
-    linkStyle 5,6,7,8 stroke:#43a047,stroke-width:2px,stroke-dasharray:5 5
+    linkStyle 0,1,2,3,5,6 stroke:#1565c0,stroke-width:2px
+    linkStyle 7 stroke:#ff9800,stroke-width:2px,stroke-dasharray:5 5
+    linkStyle 8,9,10,11,12 stroke:#43a047,stroke-width:2px,stroke-dasharray:5 5
+    
+    %% 添加注释说明
+    note1["🚀 <b>流程说明</b><br/>1. 正常流程：从左到右<br/>2. 人类审查点：暂停工作流<br/>3. 用户可：继续/修改/退出"]:::startStyle
+    note1 -.- HR
+    
+    %% 样式美化
+    style HR fill:#e3f2fd,stroke:#1565c0
 ```
 
 ## 示例报告：对 LangChain 的完整技术尽调
