@@ -3,7 +3,7 @@ import os
 import json
 import argparse
 from configs.env_config import EnvConfig
-from typing import TypedDict
+from typing import TypedDict,TypedDict,Annotated,List,Dict,Any
 from configs.model_config import ModelConfig
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -21,9 +21,9 @@ class AuditState(TypedDict):
     model_name: str
 
     # 中间数据
-    scanner_data: [str]  # Scanner 的输出
-    audit_plan: [str]  # Strategist 的输出
-    audit_results: [str]  # Auditor 的输出
+    scanner_data: Dict[str,Any]  # Scanner 的输出
+    audit_plan: Dict[str,Any]  # Strategist 的输出
+    audit_results: Annotated[List[Dict[str, Any]], operator.add]  # Auditor 的输出
 
     # 最终产物
     final_report: str
@@ -69,7 +69,7 @@ db_path = "audit_checkpoints.db"
 conn = sqlite3.connect(db_path, check_same_thread=False)
 memory = SqliteSaver(conn)
 
-app = workflow.compile(checkpointer=memory)
+app = workflow.compile(checkpointer=memory,interrupt_before=["auditor_node"])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="代码分析师 - GitHub仓库深度尽调工具")
@@ -141,7 +141,47 @@ if __name__ == "__main__":
     try:
         print("🚀 启动/恢复审计任务...")
         final_state = app.invoke(inputs, config=config)
+        snapshot = app.get_state(config)
+        if snapshot.next and snapshot.next[0] == "auditor_node":
+            current_plan = snapshot.values.get("audit_plan", {})
+            print("\n" + "=" * 30)
+            print("🛑 任务暂停：请审查 Agent 拟定的审计计划")
+            print(f"核心轨道 (Core Tracks): {current_plan.get('core_tracks', [])}")
+            print(f"随机轨道 (Random Tracks): {current_plan.get('random_tracks', [])}")
+            print("=" * 30)
 
+            user_choice = input(
+                "\n您想如何处理？\n[C] 直接继续\n[M] 修改计划并继续\n[Q] 退出任务\n请输入: ").strip().upper()
+
+            if user_choice == "M":
+                # 人工输入新的核心文件
+                new_paths = input("\n请输入您认为的核心代码路径 (多个请用逗号隔开): ")
+                if new_paths:
+                    updated_plan = current_plan.copy()
+                    updated_plan["core_tracks"] = [p.strip() for p in new_paths.split(",")]
+
+                    # 核心操作：更新状态机中的计划
+                    app.update_state(config, {"audit_plan": updated_plan})
+                    print("✅ 计划已更新。")
+
+            elif user_choice == "Q":
+                print("👋 任务已保存，您可以稍后恢复。")
+                exit()
+
+            # --- 步骤 3: 恢复运行 ---
+            print("\n▶️ 恢复执行后续流程...")
+            # 传入 None 表示从当前状态点继续
+            final_state = app.invoke(None, config=config)
+
+            # 保存报告
+            if "final_report" in final_state:
+                with open("langgraph_report.md", "w", encoding="utf-8") as f:
+                    f.write(final_state['final_report'])
+                print("\n✅ 自动化审计任务圆满完成！报告已保存至 langgraph_report.md")
+
+        else:
+            print("任务已在之前完成或未进入中断点。")
+        
         with open("langgraph_report.md", "w", encoding="utf-8") as f:
             f.write(final_state['final_report'])
         print("✅ 基于 LangGraph 的自动化审计任务圆满完成！")
