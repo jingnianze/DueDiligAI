@@ -32,6 +32,37 @@ CodeAnalyst AI 采用多智能体协同架构，各模块职责清晰、高效�
 核心能力：整合宏观指标、核心文件审计结果，进行 “逻辑对撞” 验证（如外部活跃度与内部代码质量的一致性）<br>
 输出：Markdown 格式的 CTO 级别综合评估报告
 
+## 🏗️高级系统架构
+本项目还可采用 LangGraph 驱动的多智能体协同架构，实现状态持久化与断点续跑：
+
+```mermaid
+flowchart LR
+    %% 数据库在中央上方连接所有节点
+    DB[(<b>SQLite 数据库</b><br/>持久化存储)]:::dbStyle
+    
+    %% 主流程
+    START(("开始")):::startStyle --> S[<b>扫描节点</b><br/>数据采集与提取]:::nodeStyle
+    S --> ST[<b>策略节点</b><br/>分析与规划]:::nodeStyle
+    ST --> A[<b>审计节点</b><br/>执行与验证]:::nodeStyle
+    A --> SY[<b>合成节点</b><br/>汇总与报告]:::nodeStyle
+    SY --> END(("结束")):::startStyle
+    
+    %% 双向数据库连接
+    DB <-.-> S
+    DB <-.-> ST
+    DB <-.-> A
+    DB <-.-> SY
+    
+    %% 样式定义
+    classDef dbStyle fill:#e8f5e8,stroke:#43a047,stroke-width:3px
+    classDef nodeStyle fill:#bbdefb,stroke:#1976d2,stroke-width:2px
+    classDef startStyle fill:#ffecb3,stroke:#ff8f00,stroke-width:2px
+    
+    %% 连线样式
+    linkStyle 0,1,2,3,4 stroke:#1565c0,stroke-width:2px
+    linkStyle 5,6,7,8 stroke:#43a047,stroke-width:2px,stroke-dasharray:5 5
+```
+
 ## 示例报告：对 LangChain 的完整技术尽调
 <details>
 <summary>点击展开/收起 LangChain项目完整输出报告</summary>
