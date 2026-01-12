@@ -3,5 +3,8 @@ requests>=2.31.0
 pyyaml>=6.0
 jinja2>=3.1.0
 python-dateutil>=2.8.0
-
-
+langgraph==0.0.15
+langchain-core==0.1.45
+langchain-openai==0.1.3
+# 数据库支持 (通常内置，但建议指定版本以防某些环境报错)
+# pysqlite3-binary  # 仅在 Linux 服务器环境下如果自带 sqlite 版本过低时取消注释
